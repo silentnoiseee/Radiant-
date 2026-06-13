@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radiant — Screen Wireframes</title>
+<style>
+  :root{
+    --navy:#1F3A5F; --teal:#2E8B8B; --light:#EAF2F2; --grey:#5A5A5A;
+    --line:#D9E1E6; --bg:#F1F4F6; --ok:#2E8B5B; --warn:#C9A227; --alert:#C0492F;
+    --ink:#222;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--ink);
+    background:linear-gradient(180deg,#fafbfc,#eef2f4);padding:0 0 60px}
+  header.hero{background:var(--navy);color:#fff;padding:38px 28px 30px;text-align:center}
+  header.hero h1{margin:0;font-size:34px;letter-spacing:2px}
+  header.hero .sub{color:#9FD0D0;font-weight:700;margin-top:4px;letter-spacing:.5px}
+  header.hero .tag{color:#cdd9e3;margin-top:10px;font-size:14px}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:22px 0 6px}
+  .legend span{font-size:12px;color:var(--grey);background:#fff;border:1px solid var(--line);
+    padding:6px 12px;border-radius:20px}
+  .legend b{color:var(--navy)}
+  .section-note{text-align:center;color:var(--grey);font-size:13px;margin:6px 0 26px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:30px}
+  .frame{background:#fff;border-radius:30px;border:1px solid var(--line);
+    box-shadow:0 10px 28px rgba(31,58,95,.10);padding:14px;display:flex;flex-direction:column}
+  .frame.wide{grid-column:1/-1;border-radius:18px}
+  .cap{font-size:12px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.8px;margin:2px 4px 10px}
+  .screen{background:var(--bg);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;min-height:520px}
+  .frame.wide .screen{min-height:auto;border-radius:12px}
+  /* app chrome */
+  .topbar{background:var(--navy);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+  .topbar .t{font-weight:700;font-size:15px}
+  .topbar .r{font-size:12px;color:#bcd0e0}
+  .pad{padding:16px}
+  .muted{color:var(--grey);font-size:12px}
+  .h{font-weight:700;font-size:15px;margin:0 0 8px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;display:inline-block}
+  .p-ok{background:#E3F2EA;color:var(--ok)}
+  .p-due{background:#FBF1D2;color:#8a6d00}
+  .p-alert{background:#F7E0DA;color:var(--alert)}
+  .p-info{background:var(--light);color:var(--teal)}
+  .btn{display:block;text-align:center;background:var(--teal);color:#fff;font-weight:700;
+    padding:13px;border-radius:11px;margin-top:6px;font-size:14px}
+  .btn.alt{background:#fff;color:var(--navy);border:1.5px solid var(--navy)}
+  .btn.danger{background:var(--alert)}
+  .btn.row2{display:flex;gap:8px;background:none;padding:0}
+  .btn.row2 a{flex:1}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .chip{font-size:11px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 8px;color:var(--grey)}
+  .chip b{color:var(--ok)}
+  .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+  .key{background:#fff;border:1px solid var(--line);border-radius:12px;text-align:center;
+    padding:16px 0;font-size:20px;font-weight:700;color:var(--navy)}
+  .dots{display:flex;gap:10px;justify-content:center;margin:10px 0}
+  .dot{width:13px;height:13px;border-radius:50%;background:#fff;border:2px solid var(--teal)}
+  .dot.f{background:var(--teal)}
+  .avatar{width:42px;height:42px;border-radius:50%;background:var(--light);color:var(--teal);
+    display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+  .avatar.lg{width:64px;height:64px;font-size:22px}
+  .field{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--grey);margin-bottom:8px}
+  .field .lab{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--teal);font-weight:700;display:block;margin-bottom:3px}
+  .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:10px}
+  .seg div{flex:1;text-align:center;padding:9px;font-size:12px;font-weight:700;color:var(--grey)}
+  .seg div.on{background:var(--teal);color:#fff}
+  .tabbar{margin-top:auto;display:flex;background:#fff;border-top:1px solid var(--line)}
+  .tabbar div{flex:1;text-align:center;padding:10px 0;font-size:10px;color:var(--grey)}
+  .tabbar div.on{color:var(--teal);font-weight:700}
+  .tabbar .ic{font-size:16px;display:block}
+  /* dashboard */
+  .dash{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
+  .stat .n{font-size:26px;font-weight:800;color:var(--navy)}
+  .stat .l{font-size:11px;color:var(--grey);margin-top:2px}
+  .stat.alert .n{color:var(--alert)}
+  .dash2{display:grid;grid-template-columns:1.3fr 1fr;gap:12px;padding:0 16px 16px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+  th{color:var(--teal);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+  .footnote{text-align:center;color:var(--grey);font-size:12px;margin-top:34px}
+  .kicker{background:var(--light);border-left:4px solid var(--teal);padding:10px 12px;border-radius:8px;font-size:12px;color:var(--navy);margin:0 4px 14px}
+</style>
+</head>
+<body>
+<header class="hero">
+  <h1>RADIANT</h1>
+  <div class="sub">GROUP HOME CARE MANAGEMENT PLATFORM</div>
+  <div class="tag">Screen Wireframes · Phase 1 · Orlando, FL · v1.0</div>
+</header>
+
+<div class="wrap">
+  <div class="legend">
+    <span><b>Navy</b> = action bars</span>
+    <span><b>Teal</b> = primary buttons</span>
+    <span><b>Green</b> = done / on-time</span>
+    <span><b>Amber</b> = due soon</span>
+    <span><b>Red</b> = alert / overdue</span>
+  </div>
+  <div class="section-note">Low-to-mid fidelity wireframes of the Phase 1 screens. Layout and flow are real; final colors, copy, and spacing will be refined in design.</div>
+  <div class="kicker"><b>Note:</b> These are mockups for planning — not the live app. Names and data shown are fictional examples for an Orlando group home.</div>
+
+  <div class="grid">
+
+    <!-- 1. Clock-in -->
+    <div class="frame">
+      <div class="cap">1 · Caregiver Clock-In (EVV)</div>
+      <div class="screen">
+        <div class="topbar"><span class="t">Sunrise House</span><span class="r">7:02 AM</span></div>
+        <div class="pad">
+          <div class="h">Enter your PIN to clock in</div>
+          <div class="muted">Aisha Bello · Direct Support</div>
+          <div class="dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot"></span></div>
+          <div class="keypad">
+            <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+            <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+            <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+            <div class="key">⌫</div><div class="key">0</div><div class="key">✓</div>
+          </div>
+          <div class="chips">
+            <span class="chip">🕒 <b>Time captured</b></span>
+            <span class="chip">📍 <b>On-site verified</b></span>
+            <span class="chip">📷 <b>Photo ready</b></span>
+          </div>
+          <div class="muted" style="margin-top:8px">Time, location &amp; identity recorded for EVV.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Shift board -->
+    <div class="frame">
+      <div class="cap">2 · Today / Shift Board</div>
+      <div class="screen">
+        <div class="topbar"><span class="t">Today · Mon Jun 15</span><span class="r">On shift: Aisha</span></div>
+        <div class="pad">
+          <div class="card">
+            <div class="row"><b>Handoff from night shift</b><span class="pill p-info">New</span></div>
+            <div class="muted" style="margin-top:6px">Marcus slept well. David refused dinner — watch intake. No incidents.</div>
+          </div>
+          <div class="h">Coming up</div>
+          <div class="card"><div class="row"><span>💊 Meds — Marcus T.</span><span class="pill p-due">8:00 AM</span></div></div>
+          <div class="card"><div class="row"><span>💊 Meds — David R.</span><span class="pill p-due">8:00 AM</span></div></div>
+          <div class="card"><div class="row"><span>🚐 Appt — Lena K. (dental)</span><span class="pill p-info">10:30</span></div></div>
+          <div class="card"><div class="row"><span>📝 Daily logs (4 residents)</span><span class="pill p-ok">0 / 4</span></div></div>
+        </div>
+        <div class="tabbar">
+          <div class="on"><span class="ic">🏠</span>Today</div>
+          <div><span class="ic">👥</span>Residents</div>
+          <div><span class="ic">💊</span>Meds</div>
+          <div><span class="ic">⚠️</span>Incident</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Resident profile -->
+    <div class="frame">
+      <div class="cap">3 · Resident Profile</div>
+      <div class="screen">
+        <div class="topbar"><span class="t">‹ Residents</span><span class="r">Edit</span></div>
+        <div class="pad">
+          <div class="row" style="gap:12px">
+            <div class="avatar lg">MT</div>
+            <div><b style="font-size:17px">Marcus Thompson</b><div class="muted">DOB 04/12/1991 · Room 2</div>
+            <span class="pill p-alert" style="margin-top:4px">Allergy: Penicillin</span></div>
+          </div>
+          <div class="seg" style="margin-top:12px"><div class="on">Overview</div><div>Meds</div><div>Logs</div><div>Docs</div></div>
+          <div class="card"><span class="muted">Diagnoses</span><div>Autism, Epilepsy</div></div>
+          <div class="card"><span class="muted">Care plan (ISP)</span><div class="row"><span>Goals &amp; supports</span><span class="pill p-info">View</span></div></div>
+          <div class="card"><span class="muted">Guardian</span><div>Patricia Thompson · (407) 555-0143</div></div>
+          <div class="btn alt">🖨 Print emergency one-pager</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. eMAR -->
+    <div class="frame">
+      <div class="cap">4 · Medication Pass (eMAR)</div>
+      <div class="screen">
+        <div class="topbar"><span class="t">Medication Due</span><span class="r">8:00 AM</span></div>
+        <div class="pad">
+          <div class="card">
+            <div class="row" style="gap:10px"><div class="avatar">MT</div><div><b>Marcus Thompson</b><div class="muted">Room 2</div></div></div>
+            <span class="pill p-alert" style="margin-top:8px">⚠ Allergy: Penicillin</span>
+            <div style="margin-top:10px"><b>Levetiracetam 500 mg</b><div class="muted">1 tablet · by mouth · with food</div></div>
+          </div>
+          <div class="muted">Scheduled 8:00 AM · administered by Aisha B.</div>
+          <div class="btn">✓ Given</div>
+          <div class="btn row2" style="margin-top:8px">
+            <a class="btn alt">Refused</a><a class="btn alt">Held</a>
+          </div>
+          <div class="muted" style="margin-top:8px">Refused / Held requires a reason (65G-7).</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Daily log -->
+    <div class="frame">
+      <div class="cap">5 · Daily Log Entry</div>
+      <div class="screen">
+        <div class="topbar"><span class="t">New Log · Marcus T.</span><span class="r">8:40 AM</span></div>
+        <div class="pad">
+          <div class="seg"><div class="on">Meal</div><div>Activity</div><div>Behavior</div><div>Other</div></div>
+          <div class="field"><span class="lab">Meal</span>Breakfast</div>
+          <div class="field"><span class="lab">Amount eaten</span>Most (75%)</div>
+          <div class="field"><span class="lab">Mood</span>Calm, talkative</div>
+          <div class="field" style="min-height:70px"><span class="lab">Notes</span>Enjoyed music in the common room. No seizures observed.</div>
+          <div class="chips"><span class="chip">📷 Add photo</span><span class="chip">📎 Attach</span></div>
+          <div class="btn" style="margin-top:10px">Sign &amp; Save</div>
+          <div class="muted" style="margin-top:6px">Signed entries lock; corrections add an addendum.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Incident -->
+    <div class="frame">
+      <div class="cap">6 · Incident Report</div>
+      <div class="screen">
+        <div class="topbar"><span class="t">New Incident</span><span class="r">‹ Cancel</span></div>
+        <div class="pad">
+          <div class="field"><span class="lab">Resident</span>David Ramirez</div>
+          <div class="field"><span class="lab">Type</span>Fall</div>
+          <div class="h" style="margin-top:4px">Severity</div>
+          <div class="seg"><div>Minor</div><div class="on">Moderate</div><div>Serious</div></div>
+          <div class="field"><span class="lab">When</span>Jun 15, 2026 · 9:15 AM</div>
+          <div class="field" style="min-height:64px"><span class="lab">What happened</span>Slipped near bathroom. No visible injury. Vitals normal.</div>
+          <div class="field"><span class="lab">Action taken</span>Assisted up, monitored, notified manager.</div>
+          <div class="btn danger">Submit &amp; Alert Manager</div>
+          <div class="muted" style="margin-top:6px">Serious incidents support timely APD notification.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. Visitor kiosk -->
+    <div class="frame">
+      <div class="cap">7 · Visitor Kiosk Check-In</div>
+      <div class="screen">
+        <div class="topbar"><span class="t">Sunrise House · Welcome</span><span class="r">Kiosk</span></div>
+        <div class="pad" style="text-align:center">
+          <div class="avatar lg" style="margin:8px auto">👋</div>
+          <div class="h">Visitor check-in</div>
+          <div class="field" style="text-align:left"><span class="lab">Your name</span>Patricia Thompson</div>
+          <div class="field" style="text-align:left"><span class="lab">Visiting</span>Marcus Thompson (Room 2)</div>
+          <div class="field" style="text-align:left"><span class="lab">Relationship</span>Mother / Guardian</div>
+          <label class="muted" style="display:block;text-align:left;margin:4px 2px 10px">☑ I agree to confidentiality &amp; house rules</label>
+          <div class="btn">Check In</div>
+          <div class="muted" style="margin-top:10px">Or scan the QR code with your phone 📱</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. Owner dashboard (wide) -->
+    <div class="frame wide">
+      <div class="cap">8 · Owner Dashboard (web / tablet)</div>
+      <div class="screen">
+        <div class="topbar"><span class="t">Radiant · Operator View — All Homes</span><span class="r">Mon Jun 15, 2026 · 9:20 AM</span></div>
+        <div class="dash">
+          <div class="stat"><div class="n">2</div><div class="l">Homes</div></div>
+          <div class="stat"><div class="n">6</div><div class="l">Staff on shift</div></div>
+          <div class="stat alert"><div class="n">1</div><div class="l">Missed med (action)</div></div>
+          <div class="stat alert"><div class="n">1</div><div class="l">Open serious incident</div></div>
+          <div class="stat"><div class="n">98%</div><div class="l">Med compliance (7d)</div></div>
+          <div class="stat"><div class="n">3</div><div class="l">Visitors on-site</div></div>
+          <div class="stat"><div class="n">2</div><div class="l">Staff validations due</div></div>
+          <div class="stat"><div class="n">100%</div><div class="l">Logs complete (yest.)</div></div>
+        </div>
+        <div class="dash2">
+          <div class="card" style="margin:0">
+            <div class="h">Live activity</div>
+            <table>
+              <tr><th>Home</th><th>Event</th><th>Who</th><th>Status</th></tr>
+              <tr><td>Sunrise</td><td>Fall — D. Ramirez</td><td>Aisha B.</td><td><span class="pill p-alert">Serious</span></td></tr>
+              <tr><td>Sunrise</td><td>Missed med — L. King</td><td>—</td><td><span class="pill p-due">Action</span></td></tr>
+              <tr><td>Lakeside</td><td>Clock-in</td><td>Joel M.</td><td><span class="pill p-ok">On-site</span></td></tr>
+              <tr><td>Lakeside</td><td>Visitor in</td><td>R. Diaz</td><td><span class="pill p-info">Visiting</span></td></tr>
+            </table>
+          </div>
+          <div class="card" style="margin:0">
+            <div class="h">Quick actions</div>
+            <div class="btn alt">📄 Inspection export (date range)</div>
+            <div class="btn alt">🕒 Approve timecards (4)</div>
+            <div class="btn alt">📊 Monthly compliance report</div>
+            <div class="btn alt">👤 Manage staff &amp; validations</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footnote">Radiant — Screen Wireframes · Phase 1 (clock-in, shift board, resident files, eMAR, daily logs, incidents, visitor kiosk, owner dashboard).<br>Incidents, visitors &amp; owner dashboard formally arrive in Phase 2 but are shown here for the full picture.</div>
+</div>
+</body>
+</html>
