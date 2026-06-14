@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ArrowRight, ArrowLeft, Check, QrCode, LogOut, UserCheck } from "lucide-react";
@@ -14,6 +14,7 @@ export default function VisitorKiosk() {
   const visits = useDemoStore((s) => s.visits);
   const addVisit = useDemoStore((s) => s.addVisit);
   const checkOut = useDemoStore((s) => s.checkOut);
+  const loadVisits = useDemoStore((s) => s.loadVisits);
   const onSite = visits.filter((v) => v.onSite);
 
   const [step, setStep] = useState(0);
@@ -22,6 +23,10 @@ export default function VisitorKiosk() {
   const [relationship, setRelationship] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    loadVisits();
+  }, [loadVisits]);
 
   function finish() {
     addVisit({ visitorName: name, visitingResidentId: resident, relationship, checkIn: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) });

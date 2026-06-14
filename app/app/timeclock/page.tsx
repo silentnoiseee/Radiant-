@@ -23,6 +23,11 @@ export default function TimeClockPage() {
   const shifts = useDemoStore((s) => s.shifts);
   const clockIn = useDemoStore((s) => s.clockIn);
   const clockOut = useDemoStore((s) => s.clockOut);
+  const loadShifts = useDemoStore((s) => s.loadShifts);
+
+  useEffect(() => {
+    loadShifts();
+  }, [loadShifts]);
 
   const [selected, setSelected] = useState<string | null>(null);
   const [pin, setPin] = useState("");

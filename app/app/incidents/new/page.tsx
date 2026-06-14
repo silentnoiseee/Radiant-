@@ -6,7 +6,8 @@ import { PageHeader } from "@/components/radiant/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Avatar } from "@/components/radiant/Avatar";
-import { residents } from "@/lib/mock/residents";
+import { residents, residentById } from "@/lib/mock/residents";
+import { supabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import type { IncidentSeverity } from "@/lib/types";
 
@@ -25,12 +26,31 @@ export default function NewIncidentPage() {
   const [action, setAction] = useState("");
   const [touched, setTouched] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const valid = resident && type && sev && what.trim() && action.trim();
 
-  function submit() {
+  async function submit() {
     setTouched(true);
-    if (!valid) return;
+    if (!valid || saving) return;
+    setSaving(true);
+    setError("");
+    const { error: dbError } = await supabase.from("incidents").insert({
+      resident_id: resident,
+      home_id: residentById(resident)?.homeId ?? null,
+      type,
+      severity: sev,
+      what_happened: what.trim(),
+      action_taken: action.trim(),
+      status: "open",
+      reported_by: "s1",
+    });
+    setSaving(false);
+    if (dbError) {
+      setError("Could not save the report. Please try again.");
+      return;
+    }
     setSubmitted(true);
   }
 
@@ -43,7 +63,7 @@ export default function NewIncidentPage() {
           <ShieldAlert className="h-10 w-10" strokeWidth={2.4} />
         </motion.div>
         <motion.h2 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-          className="mt-6 font-display text-2xl font-extrabold text-navy">Incident submitted & team alerted</motion.h2>
+          className="mt-6 font-display text-2xl font-extrabold text-navy">Incident submitted &amp; team alerted</motion.h2>
         <p className="mt-2 max-w-sm text-navy/60">The manager, on-call nurse, and guardian have been notified. The report is saved to the resident&apos;s record.</p>
         <Button className="mt-8" onClick={() => { setSubmitted(false); setResident(""); setType(""); setSev(""); setWhat(""); setAction(""); setTouched(false); }}>
           File another report
@@ -116,9 +136,11 @@ export default function NewIncidentPage() {
           {touched && !action.trim() && <p className="mt-2 text-2xs font-semibold text-alert">Required.</p>}
         </div>
 
+        {error && <p className="text-center text-sm font-semibold text-alert">{error}</p>}
+
         <div className="flex items-center justify-between border-t border-navy/8 pt-5">
           <div className="flex items-center gap-2 text-xs text-navy/50"><Check className="h-4 w-4" /> Reporting as <span className="font-semibold text-navy">Grace Okafor</span></div>
-          <Button variant="danger" onClick={submit}><Send className="h-4 w-4" /> Submit & alert</Button>
+          <Button variant="danger" onClick={submit} disabled={saving}><Send className="h-4 w-4" /> {saving ? "Submitting…" : "Submit & alert"}</Button>
         </div>
       </div>
     </div>

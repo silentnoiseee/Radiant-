@@ -1,4 +1,5 @@
 "use client";
+import { useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -21,6 +22,13 @@ export default function DashboardPage() {
   const admins = useDemoStore((s) => s.administrations);
   const visits = useDemoStore((s) => s.visits);
   const shifts = useDemoStore((s) => s.shifts);
+  const loadVisits = useDemoStore((s) => s.loadVisits);
+  const loadShifts = useDemoStore((s) => s.loadShifts);
+
+  useEffect(() => {
+    loadVisits();
+    loadShifts();
+  }, [loadVisits, loadShifts]);
 
   const now = Date.now();
   const payroll = staff

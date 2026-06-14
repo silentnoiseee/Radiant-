@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Avatar } from "@/components/radiant/Avatar";
 import { residents } from "@/lib/mock/residents";
+import { supabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import type { LogCategory } from "@/lib/types";
 
@@ -24,12 +25,28 @@ export default function NewLogPage() {
   const [note, setNote] = useState("");
   const [saved, setSaved] = useState(false);
   const [touched, setTouched] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const valid = resident && title.trim() && note.trim();
 
-  function save() {
+  async function save() {
     setTouched(true);
-    if (!valid) return;
+    if (!valid || saving) return;
+    setSaving(true);
+    setError("");
+    const { error: dbError } = await supabase.from("daily_logs").insert({
+      resident_id: resident,
+      category: cat,
+      title: title.trim(),
+      note: note.trim(),
+      staff_id: "s2",
+    });
+    setSaving(false);
+    if (dbError) {
+      setError("Could not save the log. Please try again.");
+      return;
+    }
     setSaved(true);
   }
 
@@ -42,7 +59,7 @@ export default function NewLogPage() {
           <Check className="h-10 w-10" strokeWidth={3} />
         </motion.div>
         <motion.h2 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-          className="mt-6 font-display text-2xl font-extrabold text-navy">Log signed & saved</motion.h2>
+          className="mt-6 font-display text-2xl font-extrabold text-navy">Log signed &amp; saved</motion.h2>
         <p className="mt-2 text-navy/60">Your note has been added to the resident&apos;s record.</p>
         <Button className="mt-8" onClick={() => { setSaved(false); setResident(""); setTitle(""); setNote(""); setTouched(false); }}>
           Add another log
@@ -101,11 +118,13 @@ export default function NewLogPage() {
           {touched && !note.trim() && <p className="mt-2 text-2xs font-semibold text-alert">Notes are required.</p>}
         </div>
 
+        {error && <p className="text-center text-sm font-semibold text-alert">{error}</p>}
+
         <div className="flex items-center justify-between border-t border-navy/8 pt-5">
           <div className="flex items-center gap-2 text-xs text-navy/50">
             <PenLine className="h-4 w-4" /> Signed as <span className="font-semibold text-navy">Tasha Bell</span>
           </div>
-          <Button variant="teal" onClick={save}><Check className="h-4 w-4" /> Sign & save</Button>
+          <Button variant="teal" onClick={save} disabled={saving}><Check className="h-4 w-4" /> {saving ? "Saving…" : "Sign & save"}</Button>
         </div>
       </div>
     </div>
