@@ -8,3 +8,6 @@ next-env.d.ts
 # local env files
 .env
 .env*.local
+
+# allow production env (public NEXT_PUBLIC_ values, safe to commit)
+!.env.production
