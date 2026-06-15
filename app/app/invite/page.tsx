@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, Send, Check, ShieldCheck, Heart, LayoutDashboard, MailCheck, RefreshCw } from "lucide-react";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { PageHeader } from "@/components/radiant/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,16 +17,19 @@ const roleCards: { id: StaffRole; label: string; icon: typeof Heart; blurb: stri
   { id: "manager", label: "Manager", icon: LayoutDashboard, blurb: "Full access including the owner dashboard." },
 ];
 
-function parseFnError(fnErr: { message: string; context?: { body?: string } }): string {
-  try {
-    if (fnErr.context?.body) {
-      const parsed = JSON.parse(fnErr.context.body);
-      if (parsed?.error) return parsed.error;
+// supabase.functions.invoke wraps a non-2xx response in a FunctionsHttpError whose
+// `context` is the raw Response. Read its JSON body to surface our real message.
+async function extractFnError(fnErr: unknown): Promise<string> {
+  if (fnErr instanceof FunctionsHttpError) {
+    try {
+      const body = await fnErr.context.json();
+      if (body?.error) return body.error as string;
+    } catch {
+      /* fall through */
     }
-  } catch {
-    /* fall through */
   }
-  return fnErr.message;
+  if (fnErr instanceof Error) return fnErr.message;
+  return "Something went wrong sending the invite.";
 }
 
 export default function InviteStaffPage() {
@@ -37,7 +41,6 @@ export default function InviteStaffPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [resending, setResending] = useState(false);
-  // The most recent successful invite, so we can offer a resend.
   const [lastInvite, setLastInvite] = useState<{ email: string; role: StaffRole; name: string; resent: boolean } | null>(null);
 
   if (profile && !profile.is_owner) {
@@ -59,7 +62,7 @@ export default function InviteStaffPage() {
       body: { email: toEmail, role: toRole, full_name: toName, redirectTo },
     });
     if (fnErr) {
-      setError(parseFnError(fnErr as { message: string; context?: { body?: string } }));
+      setError(await extractFnError(fnErr));
       return false;
     }
     if (data?.error) {
