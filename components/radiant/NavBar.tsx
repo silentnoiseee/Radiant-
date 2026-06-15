@@ -2,16 +2,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { CalendarDays, Users, Pill, AlertOctagon, LayoutDashboard, Sparkles, Clock } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { CalendarDays, Users, Pill, AlertOctagon, LayoutDashboard, Sparkles, Clock, ClipboardList, LogOut } from "lucide-react";
+import { cn, initials } from "@/lib/utils";
+import { useAuth, type Role } from "@/components/auth/AuthProvider";
 
-const nav = [
-  { href: "/app", label: "Today", icon: CalendarDays },
-  { href: "/app/residents", label: "Residents", icon: Users },
-  { href: "/app/medications", label: "Meds", icon: Pill },
-  { href: "/app/incidents/new", label: "Incidents", icon: AlertOctagon },
-  { href: "/app/timeclock", label: "Hours", icon: Clock },
-  { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
+type NavItem = { href: string; label: string; icon: typeof CalendarDays; roles: Role[] };
+
+const nav: NavItem[] = [
+  { href: "/app", label: "Today", icon: CalendarDays, roles: ["manager", "caregiver"] },
+  { href: "/app/residents", label: "Residents", icon: Users, roles: ["manager", "caregiver"] },
+  { href: "/app/medications", label: "Meds", icon: Pill, roles: ["manager", "caregiver"] },
+  { href: "/app/logs/new", label: "Logs", icon: ClipboardList, roles: ["manager", "caregiver"] },
+  { href: "/app/incidents/new", label: "Incidents", icon: AlertOctagon, roles: ["manager", "caregiver"] },
+  { href: "/app/timeclock", label: "Hours", icon: Clock, roles: ["manager", "caregiver"] },
+  { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["manager"] },
 ];
 
 function isActive(path: string, href: string) {
@@ -19,8 +23,17 @@ function isActive(path: string, href: string) {
   return path.startsWith(href);
 }
 
+function itemsForRole(role: Role | undefined) {
+  if (!role) return [];
+  return nav.filter((item) => item.roles.includes(role));
+}
+
 export function Sidebar() {
   const path = usePathname();
+  const { profile, signOut } = useAuth();
+  const items = itemsForRole(profile?.role);
+  const roleLabel = profile?.role ? profile.role[0].toUpperCase() + profile.role.slice(1) : "";
+
   return (
     <aside className="hidden lg:flex sticky top-0 h-screen w-64 shrink-0 flex-col border-r border-navy/8 bg-white/70 backdrop-blur-xl px-4 py-6">
       <Link href="/" className="flex items-center gap-2 px-3 pb-8 focus-ring rounded-xl">
@@ -30,7 +43,7 @@ export function Sidebar() {
         <span className="font-display text-xl font-extrabold text-navy">Radiant</span>
       </Link>
       <nav className="flex flex-col gap-1">
-        {nav.map((item) => {
+        {items.map((item) => {
           const active = isActive(path, item.href);
           return (
             <Link
@@ -55,14 +68,21 @@ export function Sidebar() {
         })}
       </nav>
       <div className="mt-auto rounded-2xl bg-cream p-4">
-        <div className="text-2xs font-bold uppercase tracking-wide text-navy/40">On shift</div>
-        <div className="mt-2 flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-teal font-display text-sm font-bold text-white">GO</div>
-          <div>
-            <div className="text-xs font-bold text-navy">Grace Okafor</div>
-            <div className="text-2xs text-navy/50">Manager · Sunrise House</div>
+        <div className="flex items-center gap-2">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-teal font-display text-sm font-bold text-white">
+            {profile?.full_name ? initials(profile.full_name) : "?"}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-xs font-bold text-navy">{profile?.full_name || "Account"}</div>
+            <div className="text-2xs text-navy/50">{roleLabel}</div>
           </div>
         </div>
+        <button
+          onClick={() => signOut()}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-navy/10 bg-white px-3 py-2 text-xs font-semibold text-navy/70 transition hover:bg-navy-50 focus-ring"
+        >
+          <LogOut className="h-4 w-4" /> Sign out
+        </button>
       </div>
     </aside>
   );
@@ -70,10 +90,13 @@ export function Sidebar() {
 
 export function BottomBar() {
   const path = usePathname();
+  const { profile } = useAuth();
+  const items = itemsForRole(profile?.role);
+
   return (
     <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-navy/8 bg-white/90 backdrop-blur-xl">
-      <div className="grid grid-cols-6">
-        {nav.map((item) => {
+      <div className="grid" style={{ gridTemplateColumns: `repeat(${Math.max(items.length, 1)}, minmax(0, 1fr))` }}>
+        {items.map((item) => {
           const active = isActive(path, item.href);
           return (
             <Link

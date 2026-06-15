@@ -26,9 +26,12 @@ function Nav() {
           <a href="#owners" className="text-sm font-semibold text-navy/60 hover:text-navy transition">For owners</a>
           <a href="#peek" className="text-sm font-semibold text-navy/60 hover:text-navy transition">The app</a>
         </nav>
-        <Link href="/app">
-          <Button size="sm" variant="primary">View the demo <ArrowRight className="h-4 w-4" /></Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/login" className="text-sm font-semibold text-navy/70 hover:text-navy transition">Sign in</Link>
+          <Link href="/signup">
+            <Button size="sm" variant="primary">Get started <ArrowRight className="h-4 w-4" /></Button>
+          </Link>
+        </div>
       </div>
     </header>
   );
@@ -67,8 +70,8 @@ function Hero() {
             beautiful, easy app — so caregivers spend less time on paperwork and more time with the people they care for.
           </motion.p>
           <motion.div variants={item} className="mt-9 flex flex-wrap items-center gap-4">
-            <Link href="/app"><Button size="lg" variant="primary">See the live demo <ArrowRight className="h-5 w-5" /></Button></Link>
-            <Link href="/app/visitors"><Button size="lg" variant="outline">Try visitor check-in</Button></Link>
+            <Link href="/signup"><Button size="lg" variant="primary">Get started <ArrowRight className="h-5 w-5" /></Button></Link>
+            <Link href="/login"><Button size="lg" variant="outline">Sign in</Button></Link>
           </motion.div>
           <motion.div variants={item} className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-3 text-sm text-navy/55">
             <span className="inline-flex items-center gap-2"><Check className="h-4 w-4 text-ok" /> Medication pass with allergy guards</span>
@@ -164,8 +167,8 @@ function Owners() {
               Radiant gives owners a real-time view of every home, so you catch a missed med or an
               expiring staff validation before it becomes a problem.
             </p>
-            <Link href="/app/dashboard" className="mt-8 inline-block">
-              <Button size="lg" variant="teal">Open the owner dashboard <ArrowRight className="h-5 w-5" /></Button>
+            <Link href="/login" className="mt-8 inline-block">
+              <Button size="lg" variant="teal">Sign in to your dashboard <ArrowRight className="h-5 w-5" /></Button>
             </Link>
           </Reveal>
           <div className="space-y-4">
@@ -239,11 +242,11 @@ function CTA() {
             See how good care management can feel.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-white/80">
-            Step into a fully working demo of Radiant — fictional residents, real interactions.
+            Create your account, pick your role, and step into a Radiant workspace built around what you do.
           </p>
-          <Link href="/app" className="mt-8 inline-block">
+          <Link href="/signup" className="mt-8 inline-block">
             <Button size="lg" className="bg-white text-teal-700 hover:bg-white/90">
-              Enter the demo <ArrowRight className="h-5 w-5" />
+              Create your account <ArrowRight className="h-5 w-5" />
             </Button>
           </Link>
         </div>
