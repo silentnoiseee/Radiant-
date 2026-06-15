@@ -2,11 +2,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { CalendarDays, Users, Pill, AlertOctagon, LayoutDashboard, Sparkles, Clock, ClipboardList, LogOut } from "lucide-react";
+import { CalendarDays, Users, Pill, AlertOctagon, LayoutDashboard, Sparkles, Clock, ClipboardList, LogOut, UserPlus } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
-import { useAuth, type Role } from "@/components/auth/AuthProvider";
+import { useAuth, type Profile, type Role } from "@/components/auth/AuthProvider";
 
-type NavItem = { href: string; label: string; icon: typeof CalendarDays; roles: Role[] };
+type NavItem = { href: string; label: string; icon: typeof CalendarDays; roles: Role[]; ownerOnly?: boolean };
 
 const nav: NavItem[] = [
   { href: "/app", label: "Today", icon: CalendarDays, roles: ["manager", "caregiver"] },
@@ -16,6 +16,7 @@ const nav: NavItem[] = [
   { href: "/app/incidents/new", label: "Incidents", icon: AlertOctagon, roles: ["manager", "caregiver"] },
   { href: "/app/timeclock", label: "Hours", icon: Clock, roles: ["manager", "caregiver"] },
   { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["manager"] },
+  { href: "/app/invite", label: "Invite", icon: UserPlus, roles: ["manager"], ownerOnly: true },
 ];
 
 function isActive(path: string, href: string) {
@@ -23,16 +24,22 @@ function isActive(path: string, href: string) {
   return path.startsWith(href);
 }
 
-function itemsForRole(role: Role | undefined) {
-  if (!role) return [];
-  return nav.filter((item) => item.roles.includes(role));
+function itemsFor(profile: Profile | null) {
+  if (!profile) return [];
+  return nav.filter(
+    (item) => item.roles.includes(profile.role) && (!item.ownerOnly || profile.is_owner)
+  );
 }
 
 export function Sidebar() {
   const path = usePathname();
   const { profile, signOut } = useAuth();
-  const items = itemsForRole(profile?.role);
-  const roleLabel = profile?.role ? profile.role[0].toUpperCase() + profile.role.slice(1) : "";
+  const items = itemsFor(profile);
+  const roleLabel = profile?.is_owner
+    ? "Owner"
+    : profile?.role
+    ? profile.role[0].toUpperCase() + profile.role.slice(1)
+    : "";
 
   return (
     <aside className="hidden lg:flex sticky top-0 h-screen w-64 shrink-0 flex-col border-r border-navy/8 bg-white/70 backdrop-blur-xl px-4 py-6">
@@ -91,7 +98,7 @@ export function Sidebar() {
 export function BottomBar() {
   const path = usePathname();
   const { profile } = useAuth();
-  const items = itemsForRole(profile?.role);
+  const items = itemsFor(profile);
 
   return (
     <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-navy/8 bg-white/90 backdrop-blur-xl">

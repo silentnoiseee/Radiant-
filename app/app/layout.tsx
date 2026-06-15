@@ -35,6 +35,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         router.replace("/app/visitors");
       } else if (profile.role === "caregiver" && path.startsWith("/app/dashboard")) {
         router.replace("/app");
+      } else if (path.startsWith("/app/invite") && !profile.is_owner) {
+        router.replace("/app");
       }
     }
   }, [loading, session, profile, path, router]);

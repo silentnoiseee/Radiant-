@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
 
@@ -9,6 +9,7 @@ export interface Profile {
   id: string;
   full_name: string | null;
   role: Role;
+  is_owner: boolean;
 }
 
 interface AuthContextValue {
@@ -18,6 +19,7 @@ interface AuthContextValue {
   signUp: (email: string, password: string, fullName: string, role: Role) => Promise<{ error?: string }>;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -30,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function loadProfile(userId: string) {
     const { data } = await supabase
       .from("profiles")
-      .select("id, full_name, role")
+      .select("id, full_name, role, is_owner")
       .eq("id", userId)
       .single();
     setProfile((data as Profile) ?? null);
@@ -55,6 +57,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  async function refreshProfile() {
+    const { data } = await supabase.auth.getSession();
+    if (data.session) await loadProfile(data.session.user.id);
+  }
+
   async function signUp(email: string, password: string, fullName: string, role: Role) {
     const { error } = await supabase.auth.signUp({
       email,
@@ -62,7 +69,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       options: { data: { full_name: fullName, role } },
     });
     if (error) return { error: error.message };
-    // Ensure we have a session even if email confirmation is still enabled on the project.
     const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
     if (signInErr) return { error: signInErr.message };
     return {};
@@ -80,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ loading, session, profile, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ loading, session, profile, signUp, signIn, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
