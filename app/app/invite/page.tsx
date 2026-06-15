@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Mail, Send, Check, ShieldCheck, Heart, LayoutDashboard, MailCheck } from "lucide-react";
+import { Mail, Send, Check, ShieldCheck, Heart, LayoutDashboard, MailCheck, RefreshCw } from "lucide-react";
 import { PageHeader } from "@/components/radiant/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,18 @@ const roleCards: { id: StaffRole; label: string; icon: typeof Heart; blurb: stri
   { id: "manager", label: "Manager", icon: LayoutDashboard, blurb: "Full access including the owner dashboard." },
 ];
 
+function parseFnError(fnErr: { message: string; context?: { body?: string } }): string {
+  try {
+    if (fnErr.context?.body) {
+      const parsed = JSON.parse(fnErr.context.body);
+      if (parsed?.error) return parsed.error;
+    }
+  } catch {
+    /* fall through */
+  }
+  return fnErr.message;
+}
+
 export default function InviteStaffPage() {
   const { profile } = useAuth();
   const [email, setEmail] = useState("");
@@ -23,10 +35,11 @@ export default function InviteStaffPage() {
   const [role, setRole] = useState<StaffRole>("caregiver");
   const [touched, setTouched] = useState(false);
   const [error, setError] = useState("");
-  const [sentTo, setSentTo] = useState("");
   const [busy, setBusy] = useState(false);
+  const [resending, setResending] = useState(false);
+  // The most recent successful invite, so we can offer a resend.
+  const [lastInvite, setLastInvite] = useState<{ email: string; role: StaffRole; name: string; resent: boolean } | null>(null);
 
-  // Only the owner may send invites.
   if (profile && !profile.is_owner) {
     return (
       <div className="mx-auto max-w-xl">
@@ -39,42 +52,43 @@ export default function InviteStaffPage() {
     );
   }
 
-  const valid = email.includes("@");
-
-  async function send(e: React.FormEvent) {
-    e.preventDefault();
-    setTouched(true);
-    if (!valid || busy) return;
-    setBusy(true);
+  async function sendInvite(toEmail: string, toRole: StaffRole, toName: string, isResend: boolean) {
     setError("");
     const redirectTo = `${window.location.origin}/accept-invite`;
     const { data, error: fnErr } = await supabase.functions.invoke("invite-user", {
-      body: { email: email.trim(), role, full_name: fullName.trim(), redirectTo },
+      body: { email: toEmail, role: toRole, full_name: toName, redirectTo },
     });
-    setBusy(false);
     if (fnErr) {
-      // Try to surface the function's JSON error message if present.
-      let msg = fnErr.message;
-      try {
-        const ctx = (fnErr as { context?: { body?: string } }).context;
-        if (ctx?.body) {
-          const parsed = JSON.parse(ctx.body);
-          if (parsed?.error) msg = parsed.error;
-        }
-      } catch {
-        /* keep default message */
-      }
-      setError(msg);
-      return;
+      setError(parseFnError(fnErr as { message: string; context?: { body?: string } }));
+      return false;
     }
     if (data?.error) {
       setError(data.error);
-      return;
+      return false;
     }
-    setSentTo(email.trim());
-    setEmail("");
-    setFullName("");
-    setTouched(false);
+    setLastInvite({ email: toEmail, role: toRole, name: toName, resent: isResend || Boolean(data?.resent) });
+    return true;
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setTouched(true);
+    if (!email.includes("@") || busy) return;
+    setBusy(true);
+    const ok = await sendInvite(email.trim(), role, fullName.trim(), false);
+    setBusy(false);
+    if (ok) {
+      setEmail("");
+      setFullName("");
+      setTouched(false);
+    }
+  }
+
+  async function onResend() {
+    if (!lastInvite || resending) return;
+    setResending(true);
+    await sendInvite(lastInvite.email, lastInvite.role, lastInvite.name, true);
+    setResending(false);
   }
 
   return (
@@ -85,24 +99,32 @@ export default function InviteStaffPage() {
         </span>
       </PageHeader>
 
-      {sentTo && (
+      {lastInvite && (
         <motion.div
           initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3 rounded-2xl bg-[#E7F2EC] p-4 text-sm font-semibold text-ok"
+          className="rounded-2xl bg-[#E7F2EC] p-4"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white"><MailCheck className="h-4 w-4 text-ok" /></span>
-          Invite sent to {sentTo}. They&apos;ll get an email link to set their password.
+          <div className="flex items-center gap-3 text-sm font-semibold text-ok">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white"><MailCheck className="h-4 w-4 text-ok" /></span>
+            {lastInvite.resent ? "Invite re-sent to" : "Invite sent to"} {lastInvite.email}.
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-3 pl-11">
+            <span className="text-2xs text-navy/55">Link expired or didn&apos;t arrive? Send a fresh one.</span>
+            <Button type="button" size="sm" variant="outline" onClick={onResend} disabled={resending}>
+              <RefreshCw className={cn("h-4 w-4", resending && "animate-spin")} /> {resending ? "Resending…" : "Resend link"}
+            </Button>
+          </div>
         </motion.div>
       )}
 
-      <form onSubmit={send} className="space-y-6 rounded-3xl bg-white p-6 sm:p-8 shadow-soft border border-navy/5">
+      <form onSubmit={onSubmit} className="space-y-6 rounded-3xl bg-white p-6 sm:p-8 shadow-soft border border-navy/5">
         <div>
           <label className="text-xs font-bold uppercase tracking-wide text-navy/50">Their email</label>
           <div className="relative mt-2">
             <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-navy/35" />
             <Input type="email" className="pl-9" placeholder="newstaff@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
-          {touched && !valid && <p className="mt-2 text-2xs font-semibold text-alert">Enter a valid email.</p>}
+          {touched && !email.includes("@") && <p className="mt-2 text-2xs font-semibold text-alert">Enter a valid email.</p>}
         </div>
 
         <div>
@@ -144,6 +166,10 @@ export default function InviteStaffPage() {
           </Button>
         </div>
       </form>
+
+      <p className="text-center text-2xs text-navy/45">
+        Re-sending to the same email generates a brand-new link and invalidates the old one.
+      </p>
     </div>
   );
 }
