@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { CalendarDays, Users, Pill, AlertOctagon, LayoutDashboard, Sparkles, Clock, ClipboardList, LogOut, UserPlus } from "lucide-react";
+import { CalendarDays, Users, Pill, AlertOctagon, LayoutDashboard, Sparkles, Clock, ClipboardList, LogOut, UserPlus, CircleUser } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import { useAuth, type Profile, type Role } from "@/components/auth/AuthProvider";
 
@@ -17,6 +17,7 @@ const nav: NavItem[] = [
   { href: "/app/timeclock", label: "Hours", icon: Clock, roles: ["manager", "caregiver"] },
   { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["manager"] },
   { href: "/app/invite", label: "Invite", icon: UserPlus, roles: ["manager"], ownerOnly: true },
+  { href: "/app/profile", label: "Profile", icon: CircleUser, roles: ["manager", "caregiver"] },
 ];
 
 function isActive(path: string, href: string) {
@@ -28,6 +29,22 @@ function itemsFor(profile: Profile | null) {
   if (!profile) return [];
   return nav.filter(
     (item) => item.roles.includes(profile.role) && (!item.ownerOnly || profile.is_owner)
+  );
+}
+
+function UserAvatar({ profile, size = 36 }: { profile: Profile; size?: number }) {
+  const name = profile.full_name || "";
+  if (profile.avatar_url) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={profile.avatar_url} alt="" style={{ height: size, width: size }} className="rounded-full object-cover" />;
+  }
+  return (
+    <div
+      style={{ height: size, width: size }}
+      className="flex items-center justify-center rounded-full bg-teal font-display text-sm font-bold text-white"
+    >
+      {name ? initials(name) : "?"}
+    </div>
   );
 }
 
@@ -75,15 +92,15 @@ export function Sidebar() {
         })}
       </nav>
       <div className="mt-auto rounded-2xl bg-cream p-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-teal font-display text-sm font-bold text-white">
-            {profile?.full_name ? initials(profile.full_name) : "?"}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-xs font-bold text-navy">{profile?.full_name || "Account"}</div>
-            <div className="text-2xs text-navy/50">{roleLabel}</div>
-          </div>
-        </div>
+        {profile && (
+          <Link href="/app/profile" className="flex items-center gap-2 rounded-lg focus-ring transition hover:opacity-80">
+            <UserAvatar profile={profile} size={36} />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-xs font-bold text-navy">{profile.full_name || "Account"}</div>
+              <div className="text-2xs text-navy/50">{roleLabel} · Edit profile</div>
+            </div>
+          </Link>
+        )}
         <button
           onClick={() => signOut()}
           className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-navy/10 bg-white px-3 py-2 text-xs font-semibold text-navy/70 transition hover:bg-navy-50 focus-ring"

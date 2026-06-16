@@ -10,7 +10,19 @@ export interface Profile {
   full_name: string | null;
   role: Role;
   is_owner: boolean;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  avatar_url: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  address: string | null;
+  title: string | null;
+  hourly_rate: number;
 }
+
+const PROFILE_COLUMNS =
+  "id, full_name, role, is_owner, first_name, last_name, phone, avatar_url, emergency_contact_name, emergency_contact_phone, address, title, hourly_rate";
 
 interface AuthContextValue {
   loading: boolean;
@@ -32,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function loadProfile(userId: string) {
     const { data } = await supabase
       .from("profiles")
-      .select("id, full_name, role, is_owner")
+      .select(PROFILE_COLUMNS)
       .eq("id", userId)
       .single();
     setProfile((data as Profile) ?? null);
