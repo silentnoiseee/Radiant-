@@ -23,7 +23,7 @@ import { dailyLogs } from "@/lib/mock/logs";
 import type { IncidentSeverity } from "@/lib/types";
 
 type StaffRow = { id: string; full_name: string | null; role: string; hourly_rate: number; avatar_url: string | null };
-type Detail = null | "onShift" | "incidents" | "staff" | "residents";
+type Detail = null | "homes" | "onShift" | "incidents" | "staff" | "residents";
 
 function isToday(iso: string) {
   const d = new Date(iso);
@@ -107,6 +107,7 @@ export default function DashboardPage() {
   const toneBadge = { navy: "navy", ok: "ok", alert: "alert", teal: "teal" } as const;
 
   const detailTitle: Record<Exclude<Detail, null>, string> = {
+    homes: "Homes",
     onShift: "Staff on shift",
     incidents: "Open incidents",
     staff: "Registered staff",
@@ -120,7 +121,7 @@ export default function DashboardPage() {
       </PageHeader>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
-        <StatCard index={0} label="Homes" value={homes.length} icon={Home} tone="navy" hint="Radiant East · West" />
+        <StatCard index={0} label="Homes" value={homes.length} icon={Home} tone="navy" hint="Radiant East · West" onClick={() => setDetail("homes")} />
         <StatCard index={1} label="Staff on shift" value={onShift} icon={Users} tone="teal" hint="Clocked in now" onClick={() => setDetail("onShift")} />
         <StatCard index={2} label="Missed meds" value={missed} icon={PillBottle} tone="ok" hint="Today" />
         <StatCard index={3} label="Open incidents" value={openIncidentsList.length} icon={AlertOctagon} tone="due" onClick={() => setDetail("incidents")} />
@@ -258,6 +259,36 @@ export default function DashboardPage() {
                 </button>
               </div>
               <div className="max-h-[64vh] overflow-y-auto p-5">
+                {detail === "homes" && (
+                  <div className="space-y-2">
+                    {homes.map((h) => {
+                      const count = residents.filter((r) => r.homeId === h.id).length;
+                      if (!h.operational) {
+                        return (
+                          <div key={h.id} className="rounded-2xl border border-dashed border-navy/15 bg-cream/40 p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="font-display text-sm font-bold text-navy/55">{h.name}</div>
+                              <Badge tone="due"><Lock className="h-3 w-3" /> Under construction</Badge>
+                            </div>
+                            <div className="mt-1 text-2xs text-navy/45">Not yet operational</div>
+                          </div>
+                        );
+                      }
+                      return (
+                        <Link key={h.id} href={`/app/homes/${h.id}`} onClick={() => setDetail(null)}
+                          className="flex items-center gap-3 rounded-2xl bg-cream/60 p-4 transition hover:bg-navy-50 focus-ring">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-navy text-white"><Home className="h-5 w-5" /></div>
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-sm font-bold text-navy">{h.name}</div>
+                            <div className="text-2xs text-navy/55">{h.city} · {count}/{h.capacity} capacity</div>
+                          </div>
+                          <ArrowRight className="h-4 w-4 text-navy/30" />
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {detail === "onShift" && (
                   <div className="space-y-2">
                     {onShiftStaff.length === 0 && <p className="text-sm text-navy/50">Nobody is clocked in right now.</p>}
