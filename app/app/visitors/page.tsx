@@ -46,7 +46,7 @@ export default function VisitorKiosk() {
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-navy text-white"><Sparkles className="h-5 w-5 text-amber" /></div>
           <div>
             <div className="font-display text-xl font-extrabold text-navy">Radiant</div>
-            <div className="text-2xs font-semibold text-navy/45">Sunrise House · Visitor check-in</div>
+            <div className="text-2xs font-semibold text-navy/45">Radiant East · Visitor check-in</div>
           </div>
         </div>
         <Link href="/app" className="text-xs font-semibold text-navy/40 hover:text-navy">Exit kiosk</Link>

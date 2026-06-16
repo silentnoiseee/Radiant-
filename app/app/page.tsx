@@ -21,7 +21,7 @@ export default function TodayPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader eyebrow="Sunrise House · Friday, June 13" title="Today">
+      <PageHeader eyebrow="Radiant East · Friday, June 13" title="Today">
         <Badge tone="teal"><Sun className="h-3.5 w-3.5" /> Day shift</Badge>
         <Link href="/app/medications"><Button size="sm" variant="primary">Start med pass <ArrowRight className="h-4 w-4" /></Button></Link>
       </PageHeader>

@@ -17,7 +17,7 @@ export default function MedicationsPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader eyebrow="Sunrise House" title="Medication pass">
+      <PageHeader eyebrow="Radiant East" title="Medication pass">
         <Badge tone="ok"><CheckCircle2 className="h-3.5 w-3.5" /> {givenCount}/{total} given</Badge>
       </PageHeader>
 

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, Users, PillBottle, AlertOctagon, ShieldCheck, DoorOpen,
-  FileDown, Clock4, FileBarChart, Activity, DollarSign, X, ArrowRight,
+  FileDown, Clock4, FileBarChart, Activity, DollarSign, X, ArrowRight, Lock,
 } from "lucide-react";
 import { PageHeader } from "@/components/radiant/PageHeader";
 import { StatCard } from "@/components/radiant/StatCard";
@@ -13,8 +13,9 @@ import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/radiant/Avatar";
 import { useDemoStore, shiftHours, formatDuration, formatTime } from "@/lib/store";
 import { supabase } from "@/lib/supabase/client";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { initials } from "@/lib/utils";
-import { homes, owner, homeById } from "@/lib/mock/homes";
+import { homes, homeById } from "@/lib/mock/homes";
 import { residents, residentById } from "@/lib/mock/residents";
 import { incidents } from "@/lib/mock/incidents";
 import { medById } from "@/lib/mock/meds";
@@ -52,6 +53,7 @@ export default function DashboardPage() {
   const loadShifts = useDemoStore((s) => s.loadShifts);
   const [staff, setStaff] = useState<StaffRow[]>([]);
   const [detail, setDetail] = useState<Detail>(null);
+  const { profile } = useAuth();
 
   useEffect(() => {
     loadVisits();
@@ -113,12 +115,12 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader eyebrow={`Owner view · ${owner.name}`} title="Dashboard">
+      <PageHeader eyebrow={`${profile?.is_owner ? "Owner" : "Manager"} view · ${profile?.full_name || "You"}`} title="Dashboard">
         <Badge tone="teal"><Home className="h-3.5 w-3.5" /> {homes.length} homes</Badge>
       </PageHeader>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
-        <StatCard index={0} label="Homes" value={homes.length} icon={Home} tone="navy" hint="Sunrise · Lakeside" />
+        <StatCard index={0} label="Homes" value={homes.length} icon={Home} tone="navy" hint="Radiant East · West" />
         <StatCard index={1} label="Staff on shift" value={onShift} icon={Users} tone="teal" hint="Clocked in now" onClick={() => setDetail("onShift")} />
         <StatCard index={2} label="Missed meds" value={missed} icon={PillBottle} tone="ok" hint="Today" />
         <StatCard index={3} label="Open incidents" value={openIncidentsList.length} icon={AlertOctagon} tone="due" onClick={() => setDetail("incidents")} />
@@ -205,15 +207,29 @@ export default function DashboardPage() {
             <div className="mt-4 space-y-3">
               {homes.map((h) => {
                 const count = residents.filter((r) => r.homeId === h.id).length;
+                if (!h.operational) {
+                  return (
+                    <div key={h.id} className="rounded-2xl border border-dashed border-navy/15 bg-cream/40 p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="font-display text-base font-bold text-navy/55">{h.name}</div>
+                        <Badge tone="due"><Lock className="h-3 w-3" /> Under construction</Badge>
+                      </div>
+                      <div className="mt-1 text-xs text-navy/45">Not yet operational</div>
+                    </div>
+                  );
+                }
                 return (
-                  <div key={h.id} className="rounded-2xl bg-cream/60 p-4">
+                  <Link key={h.id} href={`/app/homes/${h.id}`} className="block rounded-2xl bg-cream/60 p-4 transition hover:bg-navy-50 focus-ring">
                     <div className="flex items-center justify-between">
                       <div className="font-display text-base font-bold text-navy">{h.name}</div>
                       <Badge tone="teal">{count} residents</Badge>
                     </div>
                     <div className="mt-1 text-xs text-navy/55">{h.city} · {count}/{h.capacity} capacity</div>
-                    <div className="mt-2 text-2xs text-navy/40">License {h.licenseNo}</div>
-                  </div>
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="text-2xs text-navy/40">License {h.licenseNo}</span>
+                      <span className="inline-flex items-center gap-1 text-2xs font-semibold text-teal">View <ArrowRight className="h-3 w-3" /></span>
+                    </div>
+                  </Link>
                 );
               })}
             </div>

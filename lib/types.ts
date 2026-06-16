@@ -7,6 +7,7 @@ export interface Home {
   address: string;
   capacity: number;
   licenseNo: string;
+  operational: boolean;
 }
 
 export type StaffRole = "Owner" | "Manager" | "Caregiver" | "Nurse";

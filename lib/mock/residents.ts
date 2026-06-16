@@ -76,7 +76,7 @@ export const residents: Resident[] = [
   {
     id: "r4",
     name: "Anthony Greco",
-    homeId: "h2",
+    homeId: "h1",
     room: "1C",
     dob: "1987-05-09",
     age: 39,
@@ -100,7 +100,7 @@ export const residents: Resident[] = [
   {
     id: "r5",
     name: "Priya Nair",
-    homeId: "h2",
+    homeId: "h1",
     room: "2A",
     dob: "1998-01-30",
     age: 28,
