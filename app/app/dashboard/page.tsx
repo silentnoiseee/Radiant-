@@ -1,9 +1,9 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  Home, Users, PillBottle, AlertOctagon, ShieldCheck, DoorOpen, BadgeCheck,
+  Home, Users, PillBottle, AlertOctagon, ShieldCheck, DoorOpen,
   FileDown, Clock4, FileBarChart, Activity, DollarSign,
 } from "lucide-react";
 import { PageHeader } from "@/components/radiant/PageHeader";
@@ -12,11 +12,33 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/radiant/Avatar";
 import { useDemoStore, shiftHours, formatDuration } from "@/lib/store";
-import { homes, staff } from "@/lib/mock/homes";
+import { supabase } from "@/lib/supabase/client";
+import { initials } from "@/lib/utils";
+import { homes, owner } from "@/lib/mock/homes";
 import { residents, residentById } from "@/lib/mock/residents";
 import { incidents } from "@/lib/mock/incidents";
 import { medById } from "@/lib/mock/meds";
 import { dailyLogs } from "@/lib/mock/logs";
+
+type StaffRow = { id: string; full_name: string | null; role: string; hourly_rate: number; avatar_url: string | null };
+
+function isToday(iso: string) {
+  const d = new Date(iso);
+  const n = new Date();
+  return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+}
+
+function StaffAvatar({ name, url }: { name: string; url: string | null }) {
+  if (url) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={url} alt="" className="h-[30px] w-[30px] rounded-full object-cover" />;
+  }
+  return (
+    <div className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-teal text-2xs font-bold text-white">
+      {name ? initials(name) : "?"}
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const admins = useDemoStore((s) => s.administrations);
@@ -24,24 +46,37 @@ export default function DashboardPage() {
   const shifts = useDemoStore((s) => s.shifts);
   const loadVisits = useDemoStore((s) => s.loadVisits);
   const loadShifts = useDemoStore((s) => s.loadShifts);
+  const [staff, setStaff] = useState<StaffRow[]>([]);
 
   useEffect(() => {
     loadVisits();
     loadShifts();
+    supabase
+      .from("profiles")
+      .select("id, full_name, role, hourly_rate, avatar_url")
+      .in("role", ["manager", "caregiver"])
+      .then(({ data }) => { if (data) setStaff(data as StaffRow[]); });
   }, [loadVisits, loadShifts]);
 
   const now = Date.now();
-  const payroll = staff
-    .map((m) => {
-      const todays = shifts.filter((sh) => sh.staffId === m.id);
-      const hours = todays.reduce((acc, sh) => acc + shiftHours(sh, now), 0);
-      return { staff: m, hours, pay: hours * m.hourlyRate, active: todays.some((sh) => !sh.clockOut) };
-    })
-    .filter((r) => r.hours > 0)
-    .sort((a, b) => b.pay - a.pay);
+
+  // Real payroll from registered staff + their shifts today
+  const payroll = useMemo(() => {
+    return staff
+      .map((m) => {
+        const todays = shifts.filter((sh) => sh.staffId === m.id && isToday(sh.clockIn));
+        const hours = todays.reduce((acc, sh) => acc + shiftHours(sh, now), 0);
+        const active = shifts.some((sh) => sh.staffId === m.id && !sh.clockOut);
+        return { staff: m, hours, pay: hours * Number(m.hourly_rate ?? 0), active };
+      })
+      .filter((r) => r.hours > 0)
+      .sort((a, b) => b.pay - a.pay);
+  }, [staff, shifts, now]);
   const totalPay = payroll.reduce((a, r) => a + r.pay, 0);
 
-  const onShift = staff.filter((s) => s.onShift).length;
+  const onShift = staff.filter((m) => shifts.some((sh) => sh.staffId === m.id && !sh.clockOut)).length;
+  const staffCount = staff.length;
+
   const given = admins.filter((a) => a.status === "given").length;
   const refusedOrHeld = admins.filter((a) => ["refused", "held"].includes(a.status)).length;
   const totalDispensable = given + refusedOrHeld || 1;
@@ -49,12 +84,8 @@ export default function DashboardPage() {
   const missed = 0;
   const openIncidents = incidents.filter((i) => i.status === "open").length;
   const onSite = visits.filter((v) => v.onSite).length;
-  const validationsDue = staff.filter((s) => {
-    const days = (new Date(s.medValidationExpiry).getTime() - new Date("2026-06-13").getTime()) / 86400000;
-    return days <= 14;
-  }).length;
 
-  // Build activity feed
+  // Build activity feed (residents/meds/incidents are still demo content)
   const activity = [
     ...dailyLogs.map((l) => ({ time: l.time, who: residentById(l.residentId)!, what: l.title, kind: "Log", tone: "navy" as const })),
     ...admins.filter((a) => a.status === "given").map((a) => {
@@ -69,19 +100,19 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader eyebrow="Owner view · Patricia Adeyemi" title="Dashboard">
+      <PageHeader eyebrow={`Owner view · ${owner.name}`} title="Dashboard">
         <Badge tone="teal"><Home className="h-3.5 w-3.5" /> {homes.length} homes</Badge>
       </PageHeader>
 
       {/* Stat grid */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
         <StatCard index={0} label="Homes" value={homes.length} icon={Home} tone="navy" hint="Sunrise · Lakeside" />
-        <StatCard index={1} label="Staff on shift" value={onShift} icon={Users} tone="teal" />
+        <StatCard index={1} label="Staff on shift" value={onShift} icon={Users} tone="teal" hint="Clocked in now" />
         <StatCard index={2} label="Missed meds" value={missed} icon={PillBottle} tone="ok" hint="Today" />
         <StatCard index={3} label="Open incidents" value={openIncidents} icon={AlertOctagon} tone="due" />
         <StatCard index={4} label="Med compliance" value={compliance} decimals={1} suffix="%" icon={ShieldCheck} tone="ok" />
         <StatCard index={5} label="Visitors on-site" value={onSite} icon={DoorOpen} tone="coral" />
-        <StatCard index={6} label="Validations due" value={validationsDue} icon={BadgeCheck} tone="alert" hint="Next 14 days" />
+        <StatCard index={6} label="Registered staff" value={staffCount} icon={Users} tone="navy" />
         <StatCard index={7} label="Residents" value={residents.length} icon={Users} tone="navy" />
       </div>
 
@@ -132,11 +163,14 @@ export default function DashboardPage() {
               <Link href="/app/timeclock" className="text-xs font-semibold text-teal hover:underline">Time clock</Link>
             </div>
             <div className="mt-4 space-y-2">
+              {payroll.length === 0 && (
+                <p className="text-sm text-navy/45">No one has clocked in yet today.</p>
+              )}
               {payroll.map((r) => (
                 <div key={r.staff.id} className="flex items-center gap-3 rounded-xl bg-cream/60 p-2.5">
-                  <Avatar name={r.staff.name} color={r.staff.avatarColor} size={30} />
+                  <StaffAvatar name={r.staff.full_name || ""} url={r.staff.avatar_url} />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-xs font-bold text-navy">{r.staff.name}</div>
+                    <div className="truncate text-xs font-bold text-navy">{r.staff.full_name || "Unnamed"}</div>
                     <div className="text-2xs text-navy/50">{formatDuration(r.hours)}{r.active && <span className="font-semibold text-ok"> · on clock</span>}</div>
                   </div>
                   <div className="font-display text-sm font-extrabold text-navy tabular-nums">${r.pay.toFixed(2)}</div>
@@ -163,14 +197,13 @@ export default function DashboardPage() {
             <div className="mt-4 space-y-3">
               {homes.map((h) => {
                 const count = residents.filter((r) => r.homeId === h.id).length;
-                const shift = staff.filter((s) => s.homeId === h.id && s.onShift).length;
                 return (
                   <div key={h.id} className="rounded-2xl bg-cream/60 p-4">
                     <div className="flex items-center justify-between">
                       <div className="font-display text-base font-bold text-navy">{h.name}</div>
-                      <Badge tone="teal">{shift} on shift</Badge>
+                      <Badge tone="teal">{count} residents</Badge>
                     </div>
-                    <div className="mt-1 text-xs text-navy/55">{h.city} · {count}/{h.capacity} residents</div>
+                    <div className="mt-1 text-xs text-navy/55">{h.city} · {count}/{h.capacity} capacity</div>
                     <div className="mt-2 text-2xs text-navy/40">License {h.licenseNo}</div>
                   </div>
                 );

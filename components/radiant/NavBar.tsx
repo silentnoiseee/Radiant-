@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { CalendarDays, Users, Pill, AlertOctagon, LayoutDashboard, Sparkles, Clock, ClipboardList, LogOut, UserPlus, CircleUser } from "lucide-react";
+import { CalendarDays, Users, Pill, AlertOctagon, LayoutDashboard, Sparkles, Clock, ClipboardList, LogOut, UserPlus, CircleUser, MessageSquare } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import { useAuth, type Profile, type Role } from "@/components/auth/AuthProvider";
 
@@ -15,6 +15,7 @@ const nav: NavItem[] = [
   { href: "/app/logs/new", label: "Logs", icon: ClipboardList, roles: ["manager", "caregiver"] },
   { href: "/app/incidents/new", label: "Incidents", icon: AlertOctagon, roles: ["manager", "caregiver"] },
   { href: "/app/timeclock", label: "Hours", icon: Clock, roles: ["manager", "caregiver"] },
+  { href: "/app/messages", label: "Messages", icon: MessageSquare, roles: ["manager", "caregiver"] },
   { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["manager"] },
   { href: "/app/invite", label: "Invite", icon: UserPlus, roles: ["manager"], ownerOnly: true },
   { href: "/app/profile", label: "Profile", icon: CircleUser, roles: ["manager", "caregiver"] },
