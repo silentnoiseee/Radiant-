@@ -112,9 +112,9 @@ export default function InviteStaffPage() {
             {lastInvite.resent ? "Invite re-sent to" : "Invite sent to"} {lastInvite.email}.
           </div>
           <div className="mt-2 flex items-center justify-between gap-3 pl-11">
-            <span className="text-2xs text-navy/55">Link expired or didn&apos;t arrive? Send a fresh one.</span>
+            <span className="text-2xs text-navy/55">Code expired or didn&apos;t arrive? Send a fresh one.</span>
             <Button type="button" size="sm" variant="outline" onClick={onResend} disabled={resending}>
-              <RefreshCw className={cn("h-4 w-4", resending && "animate-spin")} /> {resending ? "Resending…" : "Resend link"}
+              <RefreshCw className={cn("h-4 w-4", resending && "animate-spin")} /> {resending ? "Resending…" : "Resend code"}
             </Button>
           </div>
         </motion.div>
@@ -171,7 +171,7 @@ export default function InviteStaffPage() {
       </form>
 
       <p className="text-center text-2xs text-navy/45">
-        Re-sending to the same email generates a brand-new link and invalidates the old one.
+        Re-sending to the same email generates a brand-new code and invalidates the old one.
       </p>
     </div>
   );
