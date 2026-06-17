@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/radiant/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/radiant/Avatar";
+import { InventoryBoard } from "@/components/radiant/InventoryBoard";
 import { homeById } from "@/lib/mock/homes";
 import { residents } from "@/lib/mock/residents";
 import { cn } from "@/lib/utils";
@@ -147,6 +148,8 @@ export default function HomeClient() {
           </div>
         </section>
       </div>
+
+      <InventoryBoard homeId={home.id} />
     </div>
   );
 }

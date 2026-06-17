@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, Users, PillBottle, AlertOctagon, ShieldCheck, DoorOpen,
-  FileDown, Clock4, FileBarChart, Activity, DollarSign, X, ArrowRight, Lock,
+  FileDown, Clock4, FileBarChart, Activity, DollarSign, X, ArrowRight, Lock, Boxes, AlertTriangle,
 } from "lucide-react";
 import { PageHeader } from "@/components/radiant/PageHeader";
 import { StatCard } from "@/components/radiant/StatCard";
@@ -14,7 +14,7 @@ import { Avatar } from "@/components/radiant/Avatar";
 import { useDemoStore, shiftHours, formatDuration, formatTime } from "@/lib/store";
 import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { initials } from "@/lib/utils";
+import { cn, initials } from "@/lib/utils";
 import { homes, homeById } from "@/lib/mock/homes";
 import { residents, residentById } from "@/lib/mock/residents";
 import { incidents } from "@/lib/mock/incidents";
@@ -23,7 +23,8 @@ import { dailyLogs } from "@/lib/mock/logs";
 import type { IncidentSeverity } from "@/lib/types";
 
 type StaffRow = { id: string; full_name: string | null; role: string; hourly_rate: number; avatar_url: string | null };
-type Detail = null | "homes" | "onShift" | "incidents" | "staff" | "residents";
+type LowItem = { id: string; home_id: string; name: string; status: "low" | "out"; updated_by_name: string | null };
+type Detail = null | "homes" | "onShift" | "incidents" | "staff" | "residents" | "supplies";
 
 function isToday(iso: string) {
   const d = new Date(iso);
@@ -52,6 +53,7 @@ export default function DashboardPage() {
   const loadVisits = useDemoStore((s) => s.loadVisits);
   const loadShifts = useDemoStore((s) => s.loadShifts);
   const [staff, setStaff] = useState<StaffRow[]>([]);
+  const [lowSupplies, setLowSupplies] = useState<LowItem[]>([]);
   const [detail, setDetail] = useState<Detail>(null);
   const { profile } = useAuth();
 
@@ -63,6 +65,11 @@ export default function DashboardPage() {
       .select("id, full_name, role, hourly_rate, avatar_url")
       .in("role", ["manager", "caregiver"])
       .then(({ data }) => { if (data) setStaff(data as StaffRow[]); });
+    supabase
+      .from("inventory_items")
+      .select("id, home_id, name, status, updated_by_name")
+      .in("status", ["low", "out"])
+      .then(({ data }) => { if (data) setLowSupplies(data as LowItem[]); });
   }, [loadVisits, loadShifts]);
 
   const now = Date.now();
@@ -108,6 +115,7 @@ export default function DashboardPage() {
 
   const detailTitle: Record<Exclude<Detail, null>, string> = {
     homes: "Homes",
+    supplies: "Supplies running low",
     onShift: "Staff on shift",
     incidents: "Open incidents",
     staff: "Registered staff",
@@ -120,6 +128,17 @@ export default function DashboardPage() {
         <Badge tone="teal"><Home className="h-3.5 w-3.5" /> {homes.length} homes</Badge>
       </PageHeader>
 
+      {lowSupplies.length > 0 && (
+        <button onClick={() => setDetail("supplies")} className="flex w-full items-center gap-3 rounded-2xl border border-due/30 bg-[#FBF3D8] p-4 text-left transition hover:brightness-[0.98] focus-ring">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white"><AlertTriangle className="h-4 w-4 text-due" /></span>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-bold text-navy">{lowSupplies.length} {lowSupplies.length === 1 ? "supply needs" : "supplies need"} restocking</div>
+            <div className="text-2xs text-navy/55">Flagged by caregivers · tap to review</div>
+          </div>
+          <ArrowRight className="h-4 w-4 text-navy/40" />
+        </button>
+      )}
+
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
         <StatCard index={0} label="Homes" value={homes.length} icon={Home} tone="navy" hint="Radiant East · West" onClick={() => setDetail("homes")} />
         <StatCard index={1} label="Staff on shift" value={onShift} icon={Users} tone="teal" hint="Clocked in now" onClick={() => setDetail("onShift")} />
@@ -129,6 +148,7 @@ export default function DashboardPage() {
         <StatCard index={5} label="Visitors on-site" value={onSite} icon={DoorOpen} tone="coral" />
         <StatCard index={6} label="Registered staff" value={staffCount} icon={Users} tone="navy" onClick={() => setDetail("staff")} />
         <StatCard index={7} label="Residents" value={residents.length} icon={Users} tone="navy" onClick={() => setDetail("residents")} />
+        <StatCard index={8} label="Supplies low" value={lowSupplies.length} icon={Boxes} tone="due" hint="Reported by staff" onClick={() => setDetail("supplies")} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -259,6 +279,25 @@ export default function DashboardPage() {
                 </button>
               </div>
               <div className="max-h-[64vh] overflow-y-auto p-5">
+                {detail === "supplies" && (
+                  <div className="space-y-2">
+                    {lowSupplies.length === 0 && <p className="text-sm text-navy/50">Everything is stocked. 🎉</p>}
+                    {lowSupplies.map((it) => (
+                      <Link key={it.id} href={`/app/homes/${it.home_id}`} onClick={() => setDetail(null)}
+                        className="flex items-center gap-3 rounded-xl bg-cream/60 p-3 transition hover:bg-navy-50 focus-ring">
+                        <span className={cn("flex h-8 w-8 items-center justify-center rounded-full", it.status === "out" ? "bg-[#F8E7E2] text-alert" : "bg-[#FBF3D8] text-due")}>
+                          <AlertTriangle className="h-4 w-4" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-bold text-navy">{it.name}</div>
+                          <div className="text-2xs text-navy/55">{homeById(it.home_id)?.name}{it.updated_by_name ? ` · reported by ${it.updated_by_name}` : ""}</div>
+                        </div>
+                        <Badge tone={it.status === "out" ? "alert" : "due"}>{it.status === "out" ? "Out" : "Low"}</Badge>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
                 {detail === "homes" && (
                   <div className="space-y-2">
                     {homes.map((h) => {
