@@ -24,7 +24,8 @@ import type { IncidentSeverity } from "@/lib/types";
 
 type StaffRow = { id: string; full_name: string | null; role: string; hourly_rate: number; avatar_url: string | null };
 type LowItem = { id: string; home_id: string; name: string; status: "low" | "out"; updated_by_name: string | null };
-type Detail = null | "homes" | "onShift" | "incidents" | "staff" | "residents" | "supplies";
+type MedRow = { id: string; resident_id: string; resident_name: string; med_name: string; dose: string | null; scheduled_time: string; status: "due" | "given" | "refused" | "held" | "missed"; recorded_by_name: string | null };
+type Detail = null | "homes" | "onShift" | "incidents" | "staff" | "residents" | "supplies" | "missed" | "compliance" | "visitors";
 
 function isToday(iso: string) {
   const d = new Date(iso);
@@ -54,6 +55,7 @@ export default function DashboardPage() {
   const loadShifts = useDemoStore((s) => s.loadShifts);
   const [staff, setStaff] = useState<StaffRow[]>([]);
   const [lowSupplies, setLowSupplies] = useState<LowItem[]>([]);
+  const [meds, setMeds] = useState<MedRow[]>([]);
   const [detail, setDetail] = useState<Detail>(null);
   const { profile } = useAuth();
 
@@ -70,6 +72,12 @@ export default function DashboardPage() {
       .select("id, home_id, name, status, updated_by_name")
       .in("status", ["low", "out"])
       .then(({ data }) => { if (data) setLowSupplies(data as LowItem[]); });
+    supabase
+      .from("med_administrations")
+      .select("id, resident_id, resident_name, med_name, dose, scheduled_time, status, recorded_by_name")
+      .eq("home_id", "h1")
+      .order("scheduled_time", { ascending: true })
+      .then(({ data }) => { if (data) setMeds(data as MedRow[]); });
   }, [loadVisits, loadShifts]);
 
   const now = Date.now();
@@ -93,11 +101,14 @@ export default function DashboardPage() {
   const onShift = onShiftStaff.length;
   const staffCount = staff.length;
 
-  const given = admins.filter((a) => a.status === "given").length;
-  const refusedOrHeld = admins.filter((a) => ["refused", "held"].includes(a.status)).length;
-  const totalDispensable = given + refusedOrHeld || 1;
-  const compliance = (given / totalDispensable) * 100;
-  const missed = 0;
+  const medGiven = meds.filter((m) => m.status === "given").length;
+  const medMissedList = meds.filter((m) => m.status === "missed");
+  const medRefused = meds.filter((m) => m.status === "refused").length;
+  const medHeld = meds.filter((m) => m.status === "held").length;
+  const medDue = meds.filter((m) => m.status === "due").length;
+  const medActioned = medGiven + medMissedList.length + medRefused + medHeld;
+  const compliance = medActioned > 0 ? (medGiven / medActioned) * 100 : 100;
+  const missed = medMissedList.length;
   const openIncidentsList = incidents.filter((i) => i.status === "open");
   const onSite = visits.filter((v) => v.onSite).length;
 
@@ -116,6 +127,9 @@ export default function DashboardPage() {
   const detailTitle: Record<Exclude<Detail, null>, string> = {
     homes: "Homes",
     supplies: "Supplies running low",
+    missed: "Missed medications",
+    compliance: "Medication compliance",
+    visitors: "Visitors on-site",
     onShift: "Staff on shift",
     incidents: "Open incidents",
     staff: "Registered staff",
@@ -142,10 +156,10 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
         <StatCard index={0} label="Homes" value={homes.length} icon={Home} tone="navy" hint="Radiant East · West" onClick={() => setDetail("homes")} />
         <StatCard index={1} label="Staff on shift" value={onShift} icon={Users} tone="teal" hint="Clocked in now" onClick={() => setDetail("onShift")} />
-        <StatCard index={2} label="Missed meds" value={missed} icon={PillBottle} tone="ok" hint="Today" />
+        <StatCard index={2} label="Missed meds" value={missed} icon={PillBottle} tone={missed > 0 ? "alert" : "ok"} hint="Today" onClick={() => setDetail("missed")} />
         <StatCard index={3} label="Open incidents" value={openIncidentsList.length} icon={AlertOctagon} tone="due" onClick={() => setDetail("incidents")} />
-        <StatCard index={4} label="Med compliance" value={compliance} decimals={1} suffix="%" icon={ShieldCheck} tone="ok" />
-        <StatCard index={5} label="Visitors on-site" value={onSite} icon={DoorOpen} tone="coral" />
+        <StatCard index={4} label="Med compliance" value={compliance} decimals={1} suffix="%" icon={ShieldCheck} tone="ok" onClick={() => setDetail("compliance")} />
+        <StatCard index={5} label="Visitors on-site" value={onSite} icon={DoorOpen} tone="coral" onClick={() => setDetail("visitors")} />
         <StatCard index={6} label="Registered staff" value={staffCount} icon={Users} tone="navy" onClick={() => setDetail("staff")} />
         <StatCard index={7} label="Residents" value={residents.length} icon={Users} tone="navy" onClick={() => setDetail("residents")} />
         <StatCard index={8} label="Supplies low" value={lowSupplies.length} icon={Boxes} tone="due" hint="Reported by staff" onClick={() => setDetail("supplies")} />
@@ -294,6 +308,68 @@ export default function DashboardPage() {
                         </div>
                         <Badge tone={it.status === "out" ? "alert" : "due"}>{it.status === "out" ? "Out" : "Low"}</Badge>
                       </Link>
+                    ))}
+                  </div>
+                )}
+
+                {detail === "missed" && (
+                  <div className="space-y-2">
+                    {medMissedList.length === 0 && <p className="text-sm text-navy/50">No missed medications today. 🎉</p>}
+                    {medMissedList.map((m) => (
+                      <div key={m.id} className="flex items-center gap-3 rounded-xl bg-cream/60 p-3">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F8E7E2] text-alert"><AlertTriangle className="h-4 w-4" /></span>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-bold text-navy">{m.med_name} <span className="font-normal text-navy/50">{m.dose}</span></div>
+                          <div className="text-2xs text-navy/55">{m.resident_name} · scheduled {m.scheduled_time}</div>
+                        </div>
+                        <Badge tone="alert">Missed</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {detail === "compliance" && (
+                  <div className="space-y-4">
+                    <div className="rounded-2xl bg-cream/60 p-5 text-center">
+                      <div className="font-display text-4xl font-extrabold text-navy tabular-nums">{compliance.toFixed(1)}%</div>
+                      <div className="mt-1 text-2xs text-navy/55">of actioned doses given today</div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="rounded-xl bg-[#E7F2EC] p-3"><div className="font-display text-xl font-extrabold text-ok">{medGiven}</div><div className="text-2xs font-semibold text-navy/55">Given</div></div>
+                      <div className="rounded-xl bg-[#F8E7E2] p-3"><div className="font-display text-xl font-extrabold text-alert">{missed}</div><div className="text-2xs font-semibold text-navy/55">Missed</div></div>
+                      <div className="rounded-xl bg-[#FBF3D8] p-3"><div className="font-display text-xl font-extrabold text-due">{medRefused}</div><div className="text-2xs font-semibold text-navy/55">Refused</div></div>
+                      <div className="rounded-xl bg-navy-50 p-3"><div className="font-display text-xl font-extrabold text-navy">{medHeld}</div><div className="text-2xs font-semibold text-navy/55">Held</div></div>
+                      <div className="rounded-xl bg-cream/70 p-3"><div className="font-display text-xl font-extrabold text-navy/60">{medDue}</div><div className="text-2xs font-semibold text-navy/55">Due</div></div>
+                      <div className="rounded-xl bg-cream/70 p-3"><div className="font-display text-xl font-extrabold text-navy">{meds.length}</div><div className="text-2xs font-semibold text-navy/55">Total</div></div>
+                    </div>
+                    <div className="space-y-1.5">
+                      {meds.map((m) => (
+                        <div key={m.id} className="flex items-center gap-3 rounded-xl border border-navy/5 p-2.5">
+                          <span className="w-12 text-2xs font-semibold text-navy/45">{m.scheduled_time}</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-xs font-bold text-navy">{m.med_name} <span className="font-normal text-navy/45">{m.dose}</span></div>
+                            <div className="text-2xs text-navy/50">{m.resident_name}</div>
+                          </div>
+                          <span className={cn("rounded-full px-2 py-0.5 text-2xs font-bold capitalize",
+                            m.status === "given" ? "bg-[#E7F2EC] text-ok" : m.status === "missed" ? "bg-[#F8E7E2] text-alert" : m.status === "refused" ? "bg-[#FBF3D8] text-due" : m.status === "held" ? "bg-navy-50 text-navy" : "bg-cream text-navy/50")}>{m.status}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {detail === "visitors" && (
+                  <div className="space-y-2">
+                    {visits.filter((v) => v.onSite).length === 0 && <p className="text-sm text-navy/50">No visitors on-site right now.</p>}
+                    {visits.filter((v) => v.onSite).map((v) => (
+                      <div key={v.id} className="flex items-center gap-3 rounded-xl bg-cream/60 p-3">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-coral/15 text-coral-600"><DoorOpen className="h-4 w-4" /></span>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-bold text-navy">{v.visitorName}</div>
+                          <div className="text-2xs text-navy/55">Visiting {residentById(v.visitingResidentId)?.name ?? "—"} · in at {v.checkIn}</div>
+                        </div>
+                        <Badge tone="teal">On-site</Badge>
+                      </div>
                     ))}
                   </div>
                 )}
