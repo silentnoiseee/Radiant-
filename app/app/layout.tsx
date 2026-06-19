@@ -1,9 +1,10 @@
 "use client";
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Clock, LogOut } from "lucide-react";
 import { Sidebar, BottomBar } from "@/components/radiant/NavBar";
 import { DemoBadge } from "@/components/radiant/DemoBadge";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 function FullScreenLoader() {
@@ -19,10 +20,36 @@ function FullScreenLoader() {
   );
 }
 
+function StatusGate({ kind, requested, onSignOut }: { kind: "pending" | "denied"; requested: string | null; onSignOut: () => void }) {
+  return (
+    <div className="grain flex min-h-screen items-center justify-center bg-cream container-px py-12">
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-lift border border-navy/5 sm:p-10">
+        <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-2xl ${kind === "pending" ? "bg-[#FBF3D8] text-due" : "bg-[#F8E7E2] text-alert"}`}>
+          <Clock className="h-8 w-8" />
+        </div>
+        {kind === "pending" ? (
+          <>
+            <h1 className="mt-5 font-display text-2xl font-extrabold text-navy">Awaiting approval</h1>
+            <p className="mt-2 text-navy/60">
+              Thanks for signing up! Your request{requested ? <> to join as a <span className="font-semibold text-navy">{requested}</span></> : ""} is pending review by an administrator. You&apos;ll have access as soon as it&apos;s approved.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="mt-5 font-display text-2xl font-extrabold text-navy">Request not approved</h1>
+            <p className="mt-2 text-navy/60">Your access request wasn&apos;t approved. Please contact your administrator if you think this is a mistake.</p>
+          </>
+        )}
+        <Button variant="outline" className="mt-7" onClick={onSignOut}><LogOut className="h-4 w-4" /> Sign out</Button>
+      </div>
+    </div>
+  );
+}
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
-  const { loading, session, profile } = useAuth();
+  const { loading, session, profile, signOut } = useAuth();
 
   useEffect(() => {
     if (loading) return;
@@ -30,7 +57,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       router.replace("/login");
       return;
     }
-    if (profile) {
+    if (profile && profile.status === "active") {
       if (profile.role === "visitor" && !path.startsWith("/app/visitors")) {
         router.replace("/app/visitors");
       } else if (profile.role === "caregiver" && path.startsWith("/app/dashboard")) {
@@ -41,14 +68,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [loading, session, profile, path, router]);
 
-  // Auth still resolving, or about to redirect (no session / no profile yet).
   if (loading || !session || !profile) {
     return <FullScreenLoader />;
   }
 
-  const kiosk = path.startsWith("/app/visitors");
+  // Pending / denied accounts can't enter the app.
+  if (profile.status !== "active") {
+    return <StatusGate kind={profile.status === "denied" ? "denied" : "pending"} requested={profile.requested_role} onSignOut={() => signOut()} />;
+  }
 
-  // Visitor check-in kiosk: full-screen, no sidebar.
+  const kiosk = path.startsWith("/app/visitors");
   if (kiosk) {
     return (
       <div className="min-h-screen bg-cream">
@@ -58,7 +87,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // A visitor on any non-kiosk route is being redirected — hold the loader.
   if (profile.role === "visitor") {
     return <FullScreenLoader />;
   }

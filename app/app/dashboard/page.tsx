@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, Users, PillBottle, AlertOctagon, ShieldCheck, DoorOpen,
-  FileDown, Clock4, FileBarChart, Activity, DollarSign, X, ArrowRight, Lock, Boxes, AlertTriangle,
+  FileDown, Clock4, FileBarChart, Activity, DollarSign, X, ArrowRight, Lock, Boxes, AlertTriangle, UserCheck,
 } from "lucide-react";
 import { PageHeader } from "@/components/radiant/PageHeader";
 import { StatCard } from "@/components/radiant/StatCard";
@@ -25,6 +25,7 @@ import type { IncidentSeverity } from "@/lib/types";
 type StaffRow = { id: string; full_name: string | null; role: string; hourly_rate: number; avatar_url: string | null };
 type LowItem = { id: string; home_id: string; name: string; status: "low" | "out"; updated_by_name: string | null };
 type MedRow = { id: string; resident_id: string; resident_name: string; med_name: string; dose: string | null; scheduled_time: string; status: "due" | "given" | "refused" | "held" | "missed"; recorded_by_name: string | null };
+type PendingReq = { id: string; full_name: string | null; requested_role: string | null };
 type Detail = null | "homes" | "onShift" | "incidents" | "staff" | "residents" | "supplies" | "missed" | "compliance" | "visitors";
 
 function isToday(iso: string) {
@@ -56,6 +57,7 @@ export default function DashboardPage() {
   const [staff, setStaff] = useState<StaffRow[]>([]);
   const [lowSupplies, setLowSupplies] = useState<LowItem[]>([]);
   const [meds, setMeds] = useState<MedRow[]>([]);
+  const [pendingReqs, setPendingReqs] = useState<PendingReq[]>([]);
   const [detail, setDetail] = useState<Detail>(null);
   const { profile } = useAuth();
 
@@ -79,6 +81,20 @@ export default function DashboardPage() {
       .order("scheduled_time", { ascending: true })
       .then(({ data }) => { if (data) setMeds(data as MedRow[]); });
   }, [loadVisits, loadShifts]);
+
+  async function loadPending() {
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, full_name, requested_role")
+      .eq("status", "pending");
+    setPendingReqs((data as PendingReq[]) ?? []);
+  }
+  useEffect(() => { loadPending(); }, []);
+
+  async function review(id: string, approve: boolean) {
+    await supabase.rpc("review_access_request", { target: id, approve });
+    loadPending();
+  }
 
   const now = Date.now();
 
@@ -151,6 +167,27 @@ export default function DashboardPage() {
           </div>
           <ArrowRight className="h-4 w-4 text-navy/40" />
         </button>
+      )}
+
+      {pendingReqs.length > 0 && (
+        <section className="rounded-3xl border border-teal/30 bg-teal-50/70 p-6 shadow-soft">
+          <h2 className="flex items-center gap-2 font-display text-base font-bold text-navy">
+            <UserCheck className="h-5 w-5 text-teal" /> Access requests ({pendingReqs.length})
+          </h2>
+          <p className="mt-1 text-2xs text-navy/55">People who signed up and are waiting for you to approve their role.</p>
+          <div className="mt-4 space-y-2">
+            {pendingReqs.map((r) => (
+              <div key={r.id} className="flex flex-wrap items-center gap-3 rounded-2xl bg-white p-3">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-bold text-navy">{r.full_name || "New user"}</div>
+                  <div className="text-2xs text-navy/55">Requested role: <span className="font-semibold capitalize text-navy">{r.requested_role}</span></div>
+                </div>
+                <Button size="sm" variant="primary" onClick={() => review(r.id, true)}>Approve</Button>
+                <button onClick={() => review(r.id, false)} className="rounded-full border border-navy/15 px-3.5 py-1.5 text-xs font-semibold text-navy/60 transition hover:bg-navy-50 focus-ring">Deny</button>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">

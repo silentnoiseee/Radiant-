@@ -19,10 +19,12 @@ export interface Profile {
   address: string | null;
   title: string | null;
   hourly_rate: number;
+  status: "pending" | "active" | "denied";
+  requested_role: Role | null;
 }
 
 const PROFILE_COLUMNS =
-  "id, full_name, role, is_owner, first_name, last_name, phone, avatar_url, emergency_contact_name, emergency_contact_phone, address, title, hourly_rate";
+  "id, full_name, role, is_owner, first_name, last_name, phone, avatar_url, emergency_contact_name, emergency_contact_phone, address, title, hourly_rate, status, requested_role";
 
 interface AuthContextValue {
   loading: boolean;
