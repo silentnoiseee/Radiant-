@@ -1,8 +1,9 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { CalendarDays, Users, Pill, AlertOctagon, LayoutDashboard, Sparkles, Clock, ClipboardList, LogOut, UserPlus, CircleUser, MessageSquare, Boxes } from "lucide-react";
+import { CalendarDays, Users, Pill, AlertOctagon, LayoutDashboard, Sparkles, Clock, ClipboardList, LogOut, UserPlus, CircleUser, MessageSquare, Boxes, MoreHorizontal } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import { useAuth, type Profile, type Role } from "@/components/auth/AuthProvider";
 
@@ -114,31 +115,85 @@ export function Sidebar() {
   );
 }
 
+function Tab({ item, active, onClick }: { item: NavItem; active: boolean; onClick?: () => void }) {
+  return (
+    <Link
+      href={item.href}
+      onClick={onClick}
+      className={cn(
+        "flex flex-col items-center gap-1 py-2.5 text-[0.625rem] font-semibold focus-ring",
+        active ? "text-teal" : "text-navy/50"
+      )}
+    >
+      <item.icon className="h-5 w-5" strokeWidth={2.2} />
+      <span className="leading-none">{item.label}</span>
+    </Link>
+  );
+}
+
 export function BottomBar() {
   const path = usePathname();
   const { profile } = useAuth();
   const items = itemsFor(profile);
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  // Keep the bar readable: show up to 4 primary tabs + a "More" sheet for the rest.
+  const hasMore = items.length > 5;
+  const primary = hasMore ? items.slice(0, 4) : items;
+  const cols = primary.length + (hasMore ? 1 : 0);
 
   return (
-    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-navy/8 bg-white/90 backdrop-blur-xl">
-      <div className="grid" style={{ gridTemplateColumns: `repeat(${Math.max(items.length, 1)}, minmax(0, 1fr))` }}>
-        {items.map((item) => {
-          const active = isActive(path, item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
+    <>
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-navy/8 bg-white/95 backdrop-blur-xl">
+        <div className="grid" style={{ gridTemplateColumns: `repeat(${Math.max(cols, 1)}, minmax(0, 1fr))` }}>
+          {primary.map((item) => (
+            <Tab key={item.href} item={item} active={isActive(path, item.href)} />
+          ))}
+          {hasMore && (
+            <button
+              onClick={() => setMoreOpen(true)}
               className={cn(
-                "flex flex-col items-center gap-1 py-2.5 text-2xs font-semibold focus-ring",
-                active ? "text-teal" : "text-navy/50"
+                "flex flex-col items-center gap-1 py-2.5 text-[0.625rem] font-semibold focus-ring",
+                items.slice(4).some((i) => isActive(path, i.href)) ? "text-teal" : "text-navy/50"
               )}
             >
-              <item.icon className="h-5 w-5" strokeWidth={2.2} />
-              {item.label}
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
+              <MoreHorizontal className="h-5 w-5" strokeWidth={2.2} />
+              <span className="leading-none">More</span>
+            </button>
+          )}
+        </div>
+      </nav>
+
+      {moreOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 bg-navy/40 backdrop-blur-sm" onClick={() => setMoreOpen(false)}>
+          <motion.div
+            initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+            className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-white p-4 pb-7 shadow-lift"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-navy/15" />
+            <div className="grid grid-cols-4 gap-2">
+              {items.map((item) => {
+                const active = isActive(path, item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMoreOpen(false)}
+                    className={cn(
+                      "flex flex-col items-center gap-1.5 rounded-2xl p-3 text-2xs font-semibold transition",
+                      active ? "bg-teal-50 text-teal" : "text-navy/65 hover:bg-navy-50"
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" strokeWidth={2.2} />
+                    <span className="text-center leading-tight">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </>
   );
 }
